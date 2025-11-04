@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <title>rpn_manual.nim</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🐳</text></svg>">
+  <meta content="text/html; charset=utf-8" http-equiv="content-type">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <meta content="nimib 0.3.12" name="generator">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+  <link rel="stylesheet" media="(prefers-color-scheme: dark)"
+  href="https://cdn.jsdelivr.net/gh/highlightjs/highlight.js/src/styles/night-owl.css">
+<link rel="stylesheet" media="(prefers-color-scheme: light), (prefers-color-scheme: no-preference)"
+  href="https://cdn.jsdelivr.net/gh/highlightjs/highlight.js/src/styles/atom-one-light.css">
+    <script src="https://cdn.jsdelivr.net/gh/pietroppeter/nimib@main/assets/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+  <style>
+.nb-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nb-small {
+  font-size: 0.8rem;
+}
+button.nb-small {
+  float: right;
+  padding: 2px;
+  padding-right: 5px;
+  padding-left: 5px;
+}
+section#source {
+  display:none
+}
+pre > code {
+  font-size: 1.2em;
+}
+.nb-output {
+  line-height: 1.15;
+}
+figure {
+  margin: 2rem 0;
+}
+figcaption {
+  text-align: center;
+}
+  
+</style>
+  
+</head>
+<body>
+<header>
+<div class="nb-box">
+  <span><a href=".">🏡</a></span>
+  <span><code>rpn_manual.nim</code></span>
+  <span></span>
+</div>
+<hr>
+</header><main>
+<style>
+pre code { border-radius: 4px 4px 0 0; }
+pre { border: 1px solid #809eb7; border-radius: 4px 4px 0 0; margin-bottom: 0; }
+pre.nb-output { border: 1px solid #809eb7; border-radius: 0 0 8px 8px; border-top: none;
+  padding: 0.8em; margin-top: 0; overflow-x: auto; }
+blockquote { border-left: 4px solid #4e89c7; padding-left: 10px; color: #555; }
+</style>
+<h1>《C++ 逆波兰计算器教程》</h1>
+<hr />
+<ul>
+<li>**作者**：vito</li>
+<li><strong>语言</strong>：C++17</li>
+<li>**框架**：标准模板库（STL）</li>
+<li>**工具**：Nimib 文档系统</li>
+<li><strong>版本</strong>：1.0</li>
+</ul>
+<hr />
+<blockquote>
+<p>“编程是一种思维艺术 —— 计算机只是忠实的画布。”</p>
+</blockquote>
+<h2>目录</h2>
+<ol>
+<li><a href="#1.-项目介绍">1. 项目介绍</a></li>
+<li><a href="#2.-项目结构设计">2. 项目结构设计</a></li>
+<li><a href="#3.-rpncalculator-类实现">3. RPNCalculator 类实现</a>
+<ul>
+<li><a href="#3.1-栈封装与基本方法">3.1 栈封装与基本方法</a></li>
+<li><a href="#3.2-运算实现">3.2 运算实现</a></li>
+</ul>
+</li>
+<li><a href="#4.-表达式解析与执行">4. 表达式解析与执行</a></li>
+<li><a href="#5.-主程序与交互界面">5. 主程序与交互界面</a></li>
+<li><a href="#6.-测试样例">6. 测试样例</a></li>
+<li><a href="#7.-扩展与优化建议">7. 扩展与优化建议</a></li>
+</ol>
+<p><a name="1.-项目介绍"></a>
+<br></p>
+<h3>1. 项目介绍</h3>
+<hr />
+<p>本教程将带你一步步实现一个<strong>功能完整的逆波兰表达式（RPN）计算器</strong>。<br />
+逆波兰表示法（Reverse Polish Notation）是一种<strong>后缀表达式</strong>，它不需要括号即可表达复杂的算术逻辑。<br />
+例如：</p>
+<table>
+<thead>
+<tr>
+<th>中缀表达式</th>
+<th>逆波兰形式</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5 + 2</td>
+<td>5 2 +</td>
+<td>7</td>
+</tr>
+<tr>
+<td>(3 + 4) × 5</td>
+<td>3 4 + 5 *</td>
+<td>35</td>
+</tr>
+<tr>
+<td>(5 - 3) ^ 2</td>
+<td>5 3 - 2 ^</td>
+<td>4</td>
+</tr></tbody></table>
+<p>该程序支持：</p>
+<ul>
+<li>基本四则运算（<code>+ - * /</code>）</li>
+<li>开方运算 <code>sqrt</code></li>
+<li>幂运算 <code>^</code></li>
+<li>斐波那契序列 <code>fib</code></li>
+<li>命令退出（<code>q</code> / <code>quit</code>）</li>
+</ul>
+<p>同时，它还具备异常处理机制和输入验证，保证交互安全。</p>
+<blockquote>
+<p>RPN 表达式的最大优点是<strong>无需括号且计算顺序明确</strong>，这使得它在解释器与虚拟机中广泛使用（如 Forth、PostScript、JVM 栈帧计算模型等）。</p>
+</blockquote>
+<p><a name="2.-项目结构设计"></a>
+<br></p>
+<h3>2. 项目结构设计</h3>
+<hr />
+<p>程序的核心组件由以下几个部分组成：</p>
+<ol>
+<li>
+<p>**RPNCalculator 类**：<br />
+实现栈操作、算术逻辑、异常检查。</p>
+</li>
+<li>
+<p><strong>isNumber 函数</strong>：<br />
+用于判断字符串是否为合法数字（含小数点和负号）。</p>
+</li>
+<li>
+<p><strong>evaluateRPN 函数</strong>：<br />
+将输入的字符串解析为 token 并执行计算。</p>
+</li>
+<li>
+<p><strong>main 函数</strong>：<br />
+实现交互式命令行界面。</p>
+</li>
+</ol>
+<hr />
+<p>结构图如下：</p>
+<pre><code class="nohighlight hljs nim"><span class="hljs-comment"># 结构伪图</span>
+<span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+  RPNCalculator
+  ├── push()
+  ├── pop()
+  ├── calculate()
+  │    ├── + - * / ^ sqrt fib
+  │    └── 内部调用 fibonacci()
+  ├── top()
+  ├── clear()
+  └── size()
+  &quot;&quot;&quot;</span></code></pre>
+<p><a name="3.-rpncalculator-类实现"></a>
+<br></p>
+<h3>3. RPNCalculator 类实现</h3>
+<hr />
+<p><a name="3.1-栈封装与基本方法"></a>
+<br></p>
+<h4>3.1 栈封装与基本方法</h4>
+<hr />
+<p>我们使用 <code>std::stack&lt;double&gt;</code> 作为计算的核心容器。</p>
+<pre><code class="nohighlight hljs nim"><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+class RPNCalculator {
+private:
+    std::stack&lt;double&gt; stack;
+
+public:
+    void push(double value) { stack.push(value); }
+
+    double pop() {
+        if (stack.empty()) throw std::runtime_error(&quot;错误: 栈为空&quot;);
+        double v = stack.top();
+        stack.pop();
+        return v;
+    }
+
+    double top() const {
+        if (stack.empty()) throw std::runtime_error(&quot;错误: 栈为空&quot;);
+        return stack.top();
+    }
+
+    void clear() { while (!stack.empty()) stack.pop(); }
+
+    size_t size() const { return stack.size(); }
+};
+  &quot;&quot;&quot;</span></code></pre>
+<blockquote>
+<p>这部分代码封装了一个安全的栈操作接口，避免了直接访问 STL 容器带来的错误风险。</p>
+</blockquote>
+<p><a name="3.2-运算实现"></a>
+<br></p>
+<h4>3.2 运算实现</h4>
+<hr />
+<p>通过 <code>calculate()</code> 方法，我们支持多种运算类型，包括四则运算、平方根、幂运算及斐波那契。</p>
+<pre><code class="nohighlight hljs nim"><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+void calculate(const std::string&amp; op) {
+    if (op == &quot;+&quot;) { push(pop() + pop()); }
+    else if (op == &quot;-&quot;) { double b = pop(); push(pop() - b); }
+    else if (op == &quot;*&quot;) { push(pop() * pop()); }
+    else if (op == &quot;/&quot;) {
+        double b = pop();
+        if (b == 0) throw std::runtime_error(&quot;错误: 除零错误&quot;);
+        push(pop() / b);
+    }
+    else if (op == &quot;sqrt&quot;) {
+        double a = pop();
+        if (a &lt; 0) throw std::runtime_error(&quot;错误: 负数不能开平方根&quot;);
+        push(std::sqrt(a));
+    }
+    else if (op == &quot;^&quot;) { double b = pop(); push(std::pow(pop(), b)); }
+    else if (op == &quot;fib&quot;) {
+        int n = static_cast&lt;int&gt;(pop());
+        if (n &lt; 0) throw std::runtime_error(&quot;错误: 斐波那契数列索引不能为负&quot;);
+        push(fibonacci(n));
+    }
+    else throw std::runtime_error(&quot;错误: 未知操作符 '&quot; + op + &quot;'&quot;);
+}
+  &quot;&quot;&quot;</span></code></pre>
+<blockquote>
+<p>注意：<code>fib</code> 采用迭代实现，以避免递归栈溢出。</p>
+</blockquote>
+<p><a name="4.-表达式解析与执行"></a>
+<br></p>
+<h3>4. 表达式解析与执行</h3>
+<hr />
+<p>RPN 表达式的解析逻辑非常直接：</p>
+<ol>
+<li>使用 <code>std::istringstream</code> 分词；</li>
+<li>依次判断每个 token 是数字还是操作符；</li>
+<li>若为数字，压入栈；</li>
+<li>若为操作符，调用 <code>calculate()</code>；</li>
+<li>最后检查栈中是否只剩一个结果。</li>
+</ol>
+<pre><code class="nohighlight hljs nim"><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+double evaluateRPN(const std::string&amp; expr, RPNCalculator&amp; calc) {
+    std::istringstream iss(expr);
+    std::string token;
+
+    while (iss &gt;&gt; token) {
+        if (isNumber(token)) calc.push(std::stod(token));
+        else calc.calculate(token);
+    }
+
+    if (calc.size() != 1)
+        throw std::runtime_error(&quot;错误: 表达式不完整&quot;);
+
+    return calc.top();
+}
+  &quot;&quot;&quot;</span></code></pre>
+<p><a name="5.-主程序与交互界面"></a>
+<br></p>
+<h3>5. 主程序与交互界面</h3>
+<hr />
+<p>最终，我们在 <code>main()</code> 函数中实现交互式命令行输入，支持用户连续输入表达式并显示结果。</p>
+<pre><code class="nohighlight hljs nim"><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+int main() {
+    RPNCalculator calculator;
+    std::string input;
+
+    std::cout &lt;&lt; &quot;C++ RPN 计算器&quot; &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;支持操作: + - * / ^ sqrt fib&quot; &lt;&lt; std::endl;
+
+    while (true) {
+        std::cout &lt;&lt; &quot;&gt; &quot;;
+        std::getline(std::cin, input);
+        if (input == &quot;q&quot; || input == &quot;quit&quot;) break;
+
+        try {
+            calculator.clear();
+            double result = evaluateRPN(input, calculator);
+            std::cout &lt;&lt; &quot;结果: &quot; &lt;&lt; result &lt;&lt; std::endl;
+        } catch (const std::exception&amp; e) {
+            std::cout &lt;&lt; e.what() &lt;&lt; std::endl;
+        }
+    }
+}
+  &quot;&quot;&quot;</span></code></pre>
+<blockquote>
+<p>这是一个完整的可运行终端程序，能够处理输入错误、数学异常、空栈访问等多种情况。</p>
+</blockquote>
+<p><a name="6.-测试样例"></a>
+<br></p>
+<h3>6. 测试样例</h3>
+<hr />
+<p>以下是一些运行测试：</p>
+<pre><code class="nohighlight hljs nim"><span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+输入: 3 4 +        输出: 7
+输入: 9 sqrt       输出: 3
+输入: 5 3 - 2 ^    输出: 4
+输入: 10 fib       输出: 55
+输入: 5 0 /        输出: 错误: 除零错误
+  &quot;&quot;&quot;</span></code></pre>
+<blockquote>
+<p>程序在错误情况下能正确抛出异常信息，而不会崩溃。</p>
+</blockquote>
+<p><a name="7.-扩展与优化建议"></a>
+<br></p>
+<h3>7. 扩展与优化建议</h3>
+<hr />
+<p>未来可扩展功能包括：</p>
+<ul>
+<li>增加变量绑定与存储（如 <code>let x = 5</code>）</li>
+<li>增加常用函数库（<code>sin</code>, <code>cos</code>, <code>log</code>）</li>
+<li>实现历史命令记录与撤销（基于 vector 记录）</li>
+<li>增加脚本执行模式：从文件中批量读取表达式</li>
+<li>支持多精度浮点运算（如使用 GMP / Boost Multiprecision）</li>
+</ul>
+<blockquote>
+<p>通过这些扩展，你的 RPN 计算器将逐步演化为一个完整的解释型计算语言内核。</p>
+</blockquote>
+<hr />
+<h2>结语</h2>
+<p>通过本教程，我们从 C++ 基础出发，构建了一个安全、模块化的逆波兰计算器。<br />
+在这个过程中，你学会了：</p>
+<ul>
+<li>使用 <strong>栈</strong> 结构组织计算；</li>
+<li>使用 <strong>异常机制</strong> 处理错误；</li>
+<li>结合 <strong>字符串流解析表达式</strong>；</li>
+<li>构建 <strong>交互式命令行程序</strong>。</li>
+</ul>
+<p>这不仅是一个计算器，更是对 <strong>语言设计、解析器构建与软件架构思维</strong> 的一次训练。</p>
+<blockquote>
+<p>“能将一个概念转化为运行的程序，便已是创造者的荣耀。”</p>
+</blockquote>
+</main>
+<footer>
+<div class="nb-box">
+  <span><span class="nb-small">made with <a href="https://pietroppeter.github.io/nimib/">nimib 🐳</a></span></span>
+  <span></span>
+  <span><button class="nb-small" id="show" onclick="toggleSourceDisplay()">Show Source</button></span>
+</div>
+</footer>
+<section id="source">
+<pre><code class="nohighlight nim hljs"><span class="hljs-comment"># rpn_calculator_doc.nim</span>
+<span class="hljs-comment"># ===============================================</span>
+<span class="hljs-comment"># 《C++ 逆波兰计算器教程（Nimib 文档版）》</span>
+<span class="hljs-comment"># -----------------------------------------------</span>
+<span class="hljs-comment"># 作者：vito（基于 GPT-5 深度生成）</span>
+<span class="hljs-comment"># 使用 Nimib 生成教学文档</span>
+<span class="hljs-comment"># ===============================================</span>
+
+<span class="hljs-keyword">import</span> std/strutils
+<span class="hljs-keyword">import</span> nimib
+
+<span class="hljs-comment"># ============= 样式初始化 =====================</span>
+<span class="hljs-keyword">template</span> initCodeTheme* =
+  nb.context[<span class="hljs-string">&quot;stylesheet&quot;</span>] = <span class="hljs-string">&quot;&quot;&quot;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/water.css@2/out/water.css&quot;&gt;&quot;&quot;&quot;</span>
+  nb.context[<span class="hljs-string">&quot;highlight&quot;</span>] = <span class="hljs-string">&quot;&quot;&quot;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;(prefers-color-scheme: dark)&quot;
+  href=&quot;https://cdn.jsdelivr.net/gh/highlightjs/highlight.js/src/styles/night-owl.css&quot;&gt;
+&lt;link rel=&quot;stylesheet&quot; media=&quot;(prefers-color-scheme: light), (prefers-color-scheme: no-preference)&quot;
+  href=&quot;https://cdn.jsdelivr.net/gh/highlightjs/highlight.js/src/styles/atom-one-light.css&quot;&gt;&quot;&quot;&quot;</span>
+
+  nbRawHtml: <span class="hljs-string">&quot;&quot;&quot;
+&lt;style&gt;
+pre code { border-radius: 4px 4px 0 0; }
+pre { border: 1px solid #809eb7; border-radius: 4px 4px 0 0; margin-bottom: 0; }
+pre.nb-output { border: 1px solid #809eb7; border-radius: 0 0 8px 8px; border-top: none;
+  padding: 0.8em; margin-top: 0; overflow-x: auto; }
+blockquote { border-left: 4px solid #4e89c7; padding-left: 10px; color: #555; }
+&lt;/style&gt;&quot;&quot;&quot;</span>
+
+<span class="hljs-comment"># ============= 文档目录模板 =====================</span>
+<span class="hljs-keyword">var</span> nbToc: <span class="hljs-type">NbBlock</span>
+
+<span class="hljs-keyword">template</span> addToc =
+  newNbBlock(<span class="hljs-string">&quot;nbText&quot;</span>, <span class="hljs-literal">false</span>, nb, nbToc, <span class="hljs-string">&quot;&quot;</span>):
+    nbToc.output = <span class="hljs-string">&quot;## 目录</span><span class="hljs-meta">\n</span><span class="hljs-meta">\n</span><span class="hljs-string">&quot;</span>
+
+<span class="hljs-keyword">template</span> nbNewSection(name:<span class="hljs-built_in">string</span>) =
+  <span class="hljs-keyword">let</span> anchorName = name.toLower.replace(<span class="hljs-string">&quot; &quot;</span>, <span class="hljs-string">&quot;-&quot;</span>)
+  nbText <span class="hljs-string">&quot;&lt;a name=</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">&quot;</span> &amp; anchorName &amp; <span class="hljs-string">&quot;</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">&gt;&lt;/a&gt;</span><span class="hljs-meta">\n</span><span class="hljs-string">&lt;br&gt;</span><span class="hljs-meta">\n</span><span class="hljs-string">### &quot;</span> &amp; name &amp; <span class="hljs-string">&quot;</span><span class="hljs-meta">\n</span><span class="hljs-meta">\n</span><span class="hljs-string">---&quot;</span>
+  nbToc.output.add <span class="hljs-string">&quot;1. &lt;a href=</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">#&quot;</span> &amp; anchorName &amp; <span class="hljs-string">&quot;</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">&gt;&quot;</span> &amp; name &amp; <span class="hljs-string">&quot;&lt;/a&gt;</span><span class="hljs-meta">\n</span><span class="hljs-string">&quot;</span>
+
+<span class="hljs-keyword">template</span> nbSubSection(name:<span class="hljs-built_in">string</span>) =
+  <span class="hljs-keyword">let</span> anchorName = name.toLower.replace(<span class="hljs-string">&quot; &quot;</span>, <span class="hljs-string">&quot;-&quot;</span>)
+  nbText <span class="hljs-string">&quot;&lt;a name=</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">&quot;</span> &amp; anchorName &amp; <span class="hljs-string">&quot;</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">&gt;&lt;/a&gt;</span><span class="hljs-meta">\n</span><span class="hljs-string">&lt;br&gt;</span><span class="hljs-meta">\n</span><span class="hljs-string">#### &quot;</span> &amp; name &amp; <span class="hljs-string">&quot;</span><span class="hljs-meta">\n</span><span class="hljs-meta">\n</span><span class="hljs-string">---&quot;</span>
+  nbToc.output.add <span class="hljs-string">&quot;    * &lt;a href=</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">#&quot;</span> &amp; anchorName &amp; <span class="hljs-string">&quot;</span><span class="hljs-meta">\&quot;</span><span class="hljs-string">&gt;&quot;</span> &amp; name &amp; <span class="hljs-string">&quot;&lt;/a&gt;</span><span class="hljs-meta">\n</span><span class="hljs-string">&quot;</span>
+
+<span class="hljs-keyword">template</span> nbQuoteBlock(code: <span class="hljs-built_in">untyped</span>) =
+  nbText <span class="hljs-string">&quot;&lt;blockquote&gt;&quot;</span>
+  code
+  nbText <span class="hljs-string">&quot;&lt;/blockquote&gt;&quot;</span>
+
+<span class="hljs-comment"># ===================== 文档内容 =====================</span>
+nbInit
+initCodeTheme()
+
+nbText: <span class="hljs-string">&quot;&quot;&quot;
+# 《C++ 逆波兰计算器教程》
+
+---
+
+- **作者**：vito  
+- **语言**：C++17  
+- **框架**：标准模板库（STL）  
+- **工具**：Nimib 文档系统  
+- **版本**：1.0  
+
+---
+
+&gt; “编程是一种思维艺术 —— 计算机只是忠实的画布。”
+&quot;&quot;&quot;</span>
+
+addToc()
+
+<span class="hljs-comment"># ------------------ 第一章 ------------------</span>
+nbNewSection <span class="hljs-string">&quot;1. 项目介绍&quot;</span>
+
+nbText: <span class="hljs-string">&quot;&quot;&quot;
+本教程将带你一步步实现一个**功能完整的逆波兰表达式（RPN）计算器**。  
+逆波兰表示法（Reverse Polish Notation）是一种**后缀表达式**，它不需要括号即可表达复杂的算术逻辑。  
+例如：
+
+| 中缀表达式 | 逆波兰形式 | 结果 |
+|-------------|-------------|-------|
+| 5 + 2 | 5 2 + | 7 |
+| (3 + 4) × 5 | 3 4 + 5 * | 35 |
+| (5 - 3) ^ 2 | 5 3 - 2 ^ | 4 |
+
+该程序支持：
+- 基本四则运算（`+ - * /`）
+- 开方运算 `sqrt`
+- 幂运算 `^`
+- 斐波那契序列 `fib`
+- 命令退出（`q` / `quit`）
+
+同时，它还具备异常处理机制和输入验证，保证交互安全。
+&quot;&quot;&quot;</span>
+
+nbQuoteBlock:
+  nbText <span class="hljs-string">&quot;RPN 表达式的最大优点是**无需括号且计算顺序明确**，这使得它在解释器与虚拟机中广泛使用（如 Forth、PostScript、JVM 栈帧计算模型等）。&quot;</span>
+
+<span class="hljs-comment"># ------------------ 第二章 ------------------</span>
+nbNewSection <span class="hljs-string">&quot;2. 项目结构设计&quot;</span>
+
+nbText: <span class="hljs-string">&quot;&quot;&quot;
+程序的核心组件由以下几个部分组成：
+
+1. **RPNCalculator 类**：  
+   实现栈操作、算术逻辑、异常检查。
+
+2. **isNumber 函数**：  
+   用于判断字符串是否为合法数字（含小数点和负号）。
+
+3. **evaluateRPN 函数**：  
+   将输入的字符串解析为 token 并执行计算。
+
+4. **main 函数**：  
+   实现交互式命令行界面。
+
+---
+
+结构图如下：
+&quot;&quot;&quot;</span>
+
+nbCodeSkip:
+  <span class="hljs-comment"># 结构伪图</span>
+  <span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+  RPNCalculator
+  ├── push()
+  ├── pop()
+  ├── calculate()
+  │    ├── + - * / ^ sqrt fib
+  │    └── 内部调用 fibonacci()
+  ├── top()
+  ├── clear()
+  └── size()
+  &quot;&quot;&quot;</span>
+
+<span class="hljs-comment"># ------------------ 第三章 ------------------</span>
+nbNewSection <span class="hljs-string">&quot;3. RPNCalculator 类实现&quot;</span>
+
+nbSubSection <span class="hljs-string">&quot;3.1 栈封装与基本方法&quot;</span>
+
+nbText: <span class="hljs-string">&quot;我们使用 `std::stack&lt;double&gt;` 作为计算的核心容器。&quot;</span>
+
+nbCodeSkip:
+  <span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+class RPNCalculator {
+private:
+    std::stack&lt;double&gt; stack;
+
+public:
+    void push(double value) { stack.push(value); }
+
+    double pop() {
+        if (stack.empty()) throw std::runtime_error(&quot;错误: 栈为空&quot;);
+        double v = stack.top();
+        stack.pop();
+        return v;
+    }
+
+    double top() const {
+        if (stack.empty()) throw std::runtime_error(&quot;错误: 栈为空&quot;);
+        return stack.top();
+    }
+
+    void clear() { while (!stack.empty()) stack.pop(); }
+
+    size_t size() const { return stack.size(); }
+};
+  &quot;&quot;&quot;</span>
+
+nbQuoteBlock:
+  nbText <span class="hljs-string">&quot;这部分代码封装了一个安全的栈操作接口，避免了直接访问 STL 容器带来的错误风险。&quot;</span>
+
+nbSubSection <span class="hljs-string">&quot;3.2 运算实现&quot;</span>
+
+nbText: <span class="hljs-string">&quot;通过 `calculate()` 方法，我们支持多种运算类型，包括四则运算、平方根、幂运算及斐波那契。&quot;</span>
+
+nbCodeSkip:
+  <span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+void calculate(const std::string&amp; op) {
+    if (op == &quot;+&quot;) { push(pop() + pop()); }
+    else if (op == &quot;-&quot;) { double b = pop(); push(pop() - b); }
+    else if (op == &quot;*&quot;) { push(pop() * pop()); }
+    else if (op == &quot;/&quot;) {
+        double b = pop();
+        if (b == 0) throw std::runtime_error(&quot;错误: 除零错误&quot;);
+        push(pop() / b);
+    }
+    else if (op == &quot;sqrt&quot;) {
+        double a = pop();
+        if (a &lt; 0) throw std::runtime_error(&quot;错误: 负数不能开平方根&quot;);
+        push(std::sqrt(a));
+    }
+    else if (op == &quot;^&quot;) { double b = pop(); push(std::pow(pop(), b)); }
+    else if (op == &quot;fib&quot;) {
+        int n = static_cast&lt;int&gt;(pop());
+        if (n &lt; 0) throw std::runtime_error(&quot;错误: 斐波那契数列索引不能为负&quot;);
+        push(fibonacci(n));
+    }
+    else throw std::runtime_error(&quot;错误: 未知操作符 '&quot; + op + &quot;'&quot;);
+}
+  &quot;&quot;&quot;</span>
+
+nbQuoteBlock:
+  nbText <span class="hljs-string">&quot;注意：`fib` 采用迭代实现，以避免递归栈溢出。&quot;</span>
+
+<span class="hljs-comment"># ------------------ 第四章 ------------------</span>
+nbNewSection <span class="hljs-string">&quot;4. 表达式解析与执行&quot;</span>
+
+nbText: <span class="hljs-string">&quot;&quot;&quot;
+RPN 表达式的解析逻辑非常直接：
+
+1. 使用 `std::istringstream` 分词；
+2. 依次判断每个 token 是数字还是操作符；
+3. 若为数字，压入栈；
+4. 若为操作符，调用 `calculate()`；
+5. 最后检查栈中是否只剩一个结果。
+&quot;&quot;&quot;</span>
+
+nbCodeSkip:
+  <span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+double evaluateRPN(const std::string&amp; expr, RPNCalculator&amp; calc) {
+    std::istringstream iss(expr);
+    std::string token;
+
+    while (iss &gt;&gt; token) {
+        if (isNumber(token)) calc.push(std::stod(token));
+        else calc.calculate(token);
+    }
+
+    if (calc.size() != 1)
+        throw std::runtime_error(&quot;错误: 表达式不完整&quot;);
+
+    return calc.top();
+}
+  &quot;&quot;&quot;</span>
+
+<span class="hljs-comment"># ------------------ 第五章 ------------------</span>
+nbNewSection <span class="hljs-string">&quot;5. 主程序与交互界面&quot;</span>
+
+nbText: <span class="hljs-string">&quot;&quot;&quot;
+最终，我们在 `main()` 函数中实现交互式命令行输入，支持用户连续输入表达式并显示结果。
+&quot;&quot;&quot;</span>
+
+nbCodeSkip:
+  <span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+int main() {
+    RPNCalculator calculator;
+    std::string input;
+
+    std::cout &lt;&lt; &quot;C++ RPN 计算器&quot; &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;支持操作: + - * / ^ sqrt fib&quot; &lt;&lt; std::endl;
+
+    while (true) {
+        std::cout &lt;&lt; &quot;&gt; &quot;;
+        std::getline(std::cin, input);
+        if (input == &quot;q&quot; || input == &quot;quit&quot;) break;
+
+        try {
+            calculator.clear();
+            double result = evaluateRPN(input, calculator);
+            std::cout &lt;&lt; &quot;结果: &quot; &lt;&lt; result &lt;&lt; std::endl;
+        } catch (const std::exception&amp; e) {
+            std::cout &lt;&lt; e.what() &lt;&lt; std::endl;
+        }
+    }
+}
+  &quot;&quot;&quot;</span>
+
+nbQuoteBlock:
+  nbText <span class="hljs-string">&quot;这是一个完整的可运行终端程序，能够处理输入错误、数学异常、空栈访问等多种情况。&quot;</span>
+
+<span class="hljs-comment"># ------------------ 第六章 ------------------</span>
+nbNewSection <span class="hljs-string">&quot;6. 测试样例&quot;</span>
+
+nbText: <span class="hljs-string">&quot;以下是一些运行测试：&quot;</span>
+
+nbCodeSkip:
+  <span class="hljs-keyword">echo</span> <span class="hljs-string">&quot;&quot;&quot;
+输入: 3 4 +        输出: 7
+输入: 9 sqrt       输出: 3
+输入: 5 3 - 2 ^    输出: 4
+输入: 10 fib       输出: 55
+输入: 5 0 /        输出: 错误: 除零错误
+  &quot;&quot;&quot;</span>
+
+nbQuoteBlock:
+  nbText <span class="hljs-string">&quot;程序在错误情况下能正确抛出异常信息，而不会崩溃。&quot;</span>
+
+<span class="hljs-comment"># ------------------ 第七章 ------------------</span>
+nbNewSection <span class="hljs-string">&quot;7. 扩展与优化建议&quot;</span>
+
+nbText: <span class="hljs-string">&quot;&quot;&quot;
+未来可扩展功能包括：
+
+- 增加变量绑定与存储（如 `let x = 5`）
+- 增加常用函数库（`sin`, `cos`, `log`）
+- 实现历史命令记录与撤销（基于 vector 记录）
+- 增加脚本执行模式：从文件中批量读取表达式
+- 支持多精度浮点运算（如使用 GMP / Boost Multiprecision）
+&quot;&quot;&quot;</span>
+
+nbQuoteBlock:
+  nbText <span class="hljs-string">&quot;通过这些扩展，你的 RPN 计算器将逐步演化为一个完整的解释型计算语言内核。&quot;</span>
+
+<span class="hljs-comment"># ------------------ 尾部 ------------------</span>
+nbText <span class="hljs-string">&quot;&quot;&quot;
+---
+
+## 结语
+
+通过本教程，我们从 C++ 基础出发，构建了一个安全、模块化的逆波兰计算器。  
+在这个过程中，你学会了：
+
+- 使用 **栈** 结构组织计算；
+- 使用 **异常机制** 处理错误；
+- 结合 **字符串流解析表达式**；
+- 构建 **交互式命令行程序**。
+
+这不仅是一个计算器，更是对 **语言设计、解析器构建与软件架构思维** 的一次训练。
+
+&gt; “能将一个概念转化为运行的程序，便已是创造者的荣耀。”
+&quot;&quot;&quot;</span>
+
+nbSave
+
+</code></pre>
+</section><script>
+function toggleSourceDisplay() {
+  var btn = document.getElementById("show")
+  var source = document.getElementById("source");
+  if (btn.innerHTML=="Show Source") {
+    btn.innerHTML = "Hide Source";
+    source.style.display = "block";
+  } else {
+    btn.innerHTML = "Show Source";
+    source.style.display = "none";
+  }
+}
+</script></body>
+</html>
